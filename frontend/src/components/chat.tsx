@@ -70,12 +70,12 @@ export default function ChatSection() {
   }
 
   return (
-    <Card className="w-full mx-auto">
-      <CardHeader>
+    <Card className="w-full h-full mx-auto from-white/20  shadow-lg ring-1 ring-black/5 backdrop-blur-sm bg-gradient-to-br">
+      <CardHeader className={'h-1/5'}>
         <CardTitle>Chatbot</CardTitle>
       </CardHeader>
-      <CardContent>
-        <ScrollArea className="h-[400px] pr-4 mb-4">
+      <CardContent className={'h-3/5'}>
+        <ScrollArea className="h-full pr-4 mb-4">
           {messages.map((message) => (
             <div
               key={message.id}
@@ -100,28 +100,29 @@ export default function ChatSection() {
                       : 'bg-muted'
                   }`}
                 >
-                
+
                   {message.text}
-                
+
                 </div>
               </div>
             </div>
           ))}
         </ScrollArea>
+      </CardContent>
+      <CardFooter className={'flex flex-col h-1/5'}>
         <div className="grid grid-cols-2 gap-2 mb-4">
           {predefinedQuestions.map((question, index) => (
-            <Button
-              key={index}
-              variant="outline"
-              className="h-auto py-2 px-4 text-sm text-left whitespace-normal"
-              onClick={() => handleSend(question)}
-            >
-              {question}
-            </Button>
+              <Button
+                  key={index}
+                  variant="outline"
+                  className="h-auto py-2 px-4 text-sm text-left whitespace-normal"
+                  onClick={() => handleSend(question)}
+              >
+                {question}
+              </Button>
           ))}
         </div>
-      </CardContent>
-      <CardFooter>
+
         <form
           onSubmit={(e) => {
             e.preventDefault()

@@ -35,9 +35,9 @@ export default function RootLayout({
   return (
     <ClerkProvider>
     <html lang="en">
-    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAC6_pnzYNZmvTZwbYn72dZo-KBjy0HkPU&callback=initMap" async defer></script>
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAC6_pnzYNZmvTZwbYn72dZo-KBjy0HkPU&callback=initMap&v=3" async defer></script>
 
-    <body>
+    <body >
         <Header />
         <ThemeProvider
                attribute="class"
