@@ -10,6 +10,7 @@ import {
     SheetTitle,
 } from "@/components/ui/sheet";
 import ChatSection from "./chat";
+import Report from "./report";
 
 export default function SideDrawer() {
     const [isOpen, setIsOpen] = useState(false);
@@ -251,7 +252,7 @@ export default function SideDrawer() {
     <div className="  absolute inset-0 p-4 rounded-lg" id="map"></div>
 </div>
     <div  className="mr-4 w-1/5 rounded-3xl h-full" id={'chatbot'} >
-        <ChatSection />
+        <Report />
     </div>
 
 
