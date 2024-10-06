@@ -74,8 +74,52 @@ export default function SideDrawer() {
                     fillOpacity: 0.35,
                 });
 
+
                 if (google.maps.geometry.poly.containsLocation(cellBounds.getCenter(), mainPolygon)) {
-                    subRegions.push(cellPolygon);
+                    const subRegion = new google.maps.Polygon({
+                        paths: [
+                            cellBounds.getNorthEast(),
+                            new google.maps.LatLng(cellBounds.getNorthEast().lat(), cellBounds.getSouthWest().lng()),
+                            cellBounds.getSouthWest(),
+                            new google.maps.LatLng(cellBounds.getSouthWest().lat(), cellBounds.getNorthEast().lng()),
+                        ],
+                        strokeColor: "#0000FF",
+                        strokeOpacity: 0.8,
+                        strokeWeight: 2,
+                        fillColor: "#0000FF",
+                        fillOpacity: 0.35,
+                    });
+
+                    // Add click listener
+                    subRegion.addListener("click", () => {
+                        const index = subRegions.indexOf(subRegion);
+                        setSelectedSubRegions(prev => {
+                            const newSet = new Set(prev);
+                            if (newSet.has(index)) {
+                                newSet.delete(index);
+                                subRegion.setOptions({ fillColor: "#0000FF" });
+                            } else {
+                                newSet.add(index);
+                                subRegion.setOptions({ fillColor: "#00FF00" });
+                            }
+                            return newSet;
+                        });
+                    });
+
+                    // Add hover listeners
+                    subRegion.addListener("mouseover", () => {
+                        if (!selectedSubRegions.has(subRegions.length)) {
+                            subRegion.setOptions({ fillColor: "#FFFF00" });
+                        }
+                    });
+
+                    subRegion.addListener("mouseout", () => {
+                        if (!selectedSubRegions.has(subRegions.length)) {
+                            subRegion.setOptions({ fillColor: "#0000FF" });
+                        }
+                    });
+
+                    subRegions.push(subRegion);
                 }
             }
         }
@@ -203,18 +247,20 @@ export default function SideDrawer() {
 
     const resetSelection = () => {
         if (polygon) {
-
             polygon.setMap(null);
         }
         circles.forEach(circle => circle.setMap(null));
+        subRegions.forEach(subRegion => subRegion.setMap(null));
         setSelectedPoints([]);
         setCircles([]);
         setPolygon(null);
+        setSubRegions([]);
+        setSelectedSubRegions(new Set());
         setIsSelecting(false);
         setShowPopup(false);
         setIsDrawn(false);
         setIsPolygonFinalized(false);
-        google.maps.Polygon.prototype.setMap = function (map: google.maps.Map | null) {};
+        setArea(null);
         console.log("Selection reset");
     };
 
@@ -232,7 +278,6 @@ export default function SideDrawer() {
         setIsPolygonFinalized(true);
         console.log("Polygon finalized");
     };
-
 
     useEffect(() => {
         if (isSelecting) {
