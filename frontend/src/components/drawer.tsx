@@ -9,7 +9,10 @@ import {
     SheetTitle,
 } from "@/components/ui/sheet";
 import ChatSection from "./chat";
-import Report from "./report";
+// import Report from "./report";
+import {Card, CardContent, CardFooter, CardHeader, CardTitle} from "@/components/ui/card";
+import {ScrollArea} from "@/components/ui/scroll-area";
+import {Avatar, AvatarFallback} from "@/components/ui/avatar";
 
 export default function SideDrawer() {
     const [isOpen, setIsOpen] = useState(false);
@@ -31,7 +34,8 @@ export default function SideDrawer() {
     const [selectedSubRegion, setSelectedSubRegion] = useState<number | null>(null);
     const [subRegionLabels, setSubRegionLabels] = useState<google.maps.Marker[]>([]);
     const [selectedTileCenter, setSelectedTileCenter] = useState<google.maps.LatLng | null>(null);
-
+    const [response, setResponse] = useState<string | null>(null);
+    const [loading, setLoading] = useState(false); // Add loading state
 
     const calculateArea = (path: google.maps.LatLng[]): number => {
         return google.maps.geometry.spherical.computeArea(path);
@@ -83,6 +87,7 @@ export default function SideDrawer() {
                     subRegion.addListener("click", () => {
                         const center = cellBounds.getCenter();
                         setSelectedTileCenter(center);
+                        handleSubmit(center.lat(), center.lng()); // Call handleSubmit with center coordinates
                         if (selectedSubRegion === tileNumber) {
                             setSelectedSubRegion(null);
                             subRegion.setOptions({ fillColor: "#0000FF", fillOpacity: 0.35 });
@@ -134,6 +139,34 @@ export default function SideDrawer() {
         return subRegions;
     };
 
+    const handleSubmit = async (latitude: number, longitude: number) => {
+        const data = {
+            latitude,
+            longitude,
+        };
+        setLoading(true); // Set loading to true when request is made
+
+        try {
+            const res = await fetch('http://127.0.0.1:4000/chat', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(data),
+            });
+
+            if (!res.ok) {
+                throw new Error(`Error: ${res.statusText}`);
+            }
+
+            const result = await res.json();
+            setResponse(result.message);
+            console.log(result.message);
+        } catch (error) {
+            console.error('Error:', error);
+        } finally {
+            setLoading(false); // Set loading to false when response is received
+        }    };
 
     useEffect(() => {
         isSelectingRef.current = isSelecting;
@@ -307,6 +340,7 @@ export default function SideDrawer() {
 
     return (
         <div className="md:relative md:h-[88vh] py-4 overflow-hidden ">
+            <div className={'flex flex-col space-y-8 h-full'}>
             <div className={'flex md:flex-row flex-col md:space-x-4 space-y-4 h-full'}>
                 <div  className="md:ml-4 md:w-1/5 w-full rounded-3xl md:h-full h-1/5" id={'chatbot'} >
                     <ChatSection />
@@ -404,21 +438,55 @@ export default function SideDrawer() {
                             >
                                 Reset Selection
                             </button>
-                            <button
-                                className={`bg-transparent ${isSelecting || isDrawn ? "border border-2 text-red-900 border-red-900" : '' } text-white px-3 py-2 rounded-md`}
-                                onClick={resetSelection}
-                            >
-                                Reverse search
-                            </button>
+                            {/*<button*/}
+                            {/*    className={`bg-transparent ${isSelecting || isDrawn ? "border border-2 text-red-900 border-red-900" : '' } text-white px-3 py-2 rounded-md`}*/}
+                            {/*    onClick={resetSelection}*/}
+                            {/*>*/}
+                            {/*    Reverse search*/}
+                            {/*</button>*/}
                         </div>
                     </div>
                     <div className="md:absolute max-sm:h-full inset-0 p-4 rounded-lg" id="map"></div>
                 </div>
-                <div  className="md:mr-4 md:w-1/5 w-full rounded-3xl md:h-full h-1/5" id={'chatbot'} >
-                    <Report />
+                <div  className="md:mr-4 md:w-1/5 w-full rounded-3xl md:h-full h-1/5"  >
+                    <Card className="w-full h-full mx-auto from-white/20  shadow-lg ring-1 ring-black/5 backdrop-blur-sm bg-gradient-to-br">
+                        <CardHeader className={'flex flex-col space-y-6 h-1/6'}>
+                            <CardTitle>Report📃</CardTitle>
+                            <Button className="" onClick={() => {} }>
+                                Pesticides Analysis 🌱
+                            </Button>
+                        </CardHeader>
+                        <CardContent className={'h-4/6'}>
+                            {/*<ScrollArea className="h-full  ">*/}
+                            {/*    <div className={`justify-items-center justify-center border rounded-xl p-2 border-white`}>*/}
+                            {/*        <p className={'${response? \'hidden\' : \'\'}  text-sm  text-center '}>*/}
+                            {/*            After selecting the map and analysis the report will be shown here, <br/> then you can use the chatbot to ask questions*/}
+                            {/*        </p>*/}
+                            {/*        {response && (*/}
+                            {/*            <div className="text-white p-4 rounded-lg shadow-lg z-50 max-w-md text-sm">*/}
+                            {/*                <h3 className="font-bold mb-2">Tile Information</h3>*/}
+                            {/*                <p>{response}</p>*/}
+                            {/*            </div>*/}
+                            {/*        )}*/}
+                            {/*    </div>*/}
+                            {/*</ScrollArea>*/}
+                            <Report response={response} loading={loading} />
+                        </CardContent>
+                        <CardFooter className={'flex flex-col h-1/6 justify-end'}>
+                            <p className={'text-sm'}>
+                                Made by AgroMind AI
+                            </p>
+                        </CardFooter>
+                    </Card>
                 </div>
             </div>
-
+            <div className={'bg-amber-300 justify-end my-8'}>
+                <p className={'text-sm text-black'}>
+                    ❗ AgroMindAI is still in developemnt process, possible errors and malfunctions can happen
+                    <a className={'text-blue-700'} href={'#'}>  report here</a>
+                </p>
+            </div>
+            </div>
             {polygon && !isPolygonFinalized && (
                 <button
                     className="fixed bottom-8 w-1/3 left-1/2 shadow-2xl  transform -translate-x-1/2 bg-green-500 text-white px-12 py-2 rounded-md"
@@ -439,5 +507,119 @@ export default function SideDrawer() {
               }
             `}</style>
         </div>
+    );
+}
+
+const cleanJsonString = (str) => {
+    // Remove any surrounding quotes from the entire string
+    str = str.replace(/^["']|["']$/g, '');
+
+    // Remove code block markers and markdown formatting
+    str = str.replace(/```json\n|\n```/g, '').replace(/[_*]/g, '');
+
+    // Fix nested object structure
+    str = str.replace(/\\"/g, '"')  // Replace escaped quotes with regular quotes
+        .replace(/"{/g, '{')   // Remove extra quotes before opening braces
+        .replace(/}"/g, '}')   // Remove extra quotes after closing braces
+        .replace(/\\n/g, '')   // Remove newline characters
+        .replace(/,\s*}/g, '}');  // Remove trailing commas
+
+    // Ensure all keys are properly quoted
+    str = str.replace(/(\w+):/g, '"$1":');
+
+    // Remove extra quotes around values
+    str = str.replace(/:\s*"\$(.*?)\$"/g, (_, p1) => `: "${p1.trim()}"`);
+
+    // Remove extra spaces around keys and values
+    str = str.replace(/\s*"\s*(.*?)\s*"\s*:\s*"\s*(.*?)\s*"\s*/g, '"$1":"$2"');
+
+    return str;
+};
+const getEmojiForCondition = (condition) => {
+    if (typeof condition !== 'string') return '❓';
+    const lowercaseCondition = condition.toLowerCase();
+    if (['no impact', 'fair', 'normal', 'good', 'safe'].some(term => lowercaseCondition.includes(term))) {
+        return '✅';
+    } else if (['urgent', 'high'].some(term => lowercaseCondition.includes(term))) {
+        return '⚠️';
+    }
+    return '❓';
+};
+
+const AnalysisTable = ({ analysis }) => {
+    return (
+        <table className="w-full text-left text-sm">
+            <thead>
+            <tr>
+                <th className="p-2">Parameter</th>
+                <th className="p-2">Value</th>
+                <th className="p-2">Status</th>
+            </tr>
+            </thead>
+            <tbody>
+            {Object.entries(analysis).map(([key, data]) => (
+                <tr key={key} className="border-t border-gray-200">
+                    <td className="p-2">{key.replace(/_/g, ' ')}</td>
+                    <td className="p-2">
+                        {data.value} {data.unit}
+                    </td>
+                    <td className="p-2">
+                        {getEmojiForCondition(data.impact_level || data.condition_level || data.moisture_condition || data.evaporation_rate || data.category || data.safety_status || data.risk_level)}
+                        {data.impact_level || data.condition_level || data.moisture_condition || data.evaporation_rate || data.category || data.safety_status || data.risk_level}
+                    </td>
+                </tr>
+            ))}
+            </tbody>
+        </table>
+    );
+};
+
+const EnhancedReport = ({ response }) => {
+    if (!response) {
+        return (
+            <p className="text-sm text-center">
+                After selecting the map and anaalysis the report will be shown here, <br/>
+                then you can use the chatbot to ask questions
+            </p>
+        );
+    }
+
+    let parsedResponse;
+    try {
+        const cleanedJsonString = cleanJsonString(response);
+        console.log("Cleaned JSON string:", cleanedJsonString);
+        parsedResponse = JSON.parse(cleanedJsonString);
+    } catch (error) {
+        console.error("Failed to parse response:", error);
+        return <p>Error parsing response data. Please check the console for details.</p>;
+    }
+
+    const { analysis } = parsedResponse;
+
+    return (
+        <div className="text-white p-4 rounded-lg shadow-lg z-50 max-w-md text-sm">
+            <h3 className="font-bold mb-2">Tile Information</h3>
+            <AnalysisTable analysis={analysis} />
+            <h4 className="font-bold mt-4 mb-2">Summaries</h4>
+            {Object.entries(analysis).map(([key, data]) => (
+                <div key={key} className="mt-2">
+                    <p><strong>{key.replace(/_/g, ' ')}:</strong> {data.summary}</p>
+                </div>
+            ))}
+        </div>
+    );
+};
+
+export function Report({ response, loading }) {
+    return (
+        <ScrollArea className="h-full pr-4 mb-4">
+            <div className="justify-items-center justify-center border rounded-xl p-2 border-white">
+                {loading ? (
+                    <p className="text-sm text-center">Loading...</p>
+                ) : (
+                    <EnhancedReport response={response} />
+                )}
+            </div>
+        </ScrollArea>
     );
 }

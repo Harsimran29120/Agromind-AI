@@ -2,6 +2,7 @@ import { UserButton } from "@clerk/nextjs";
 import { auth} from "@clerk/nextjs/server";
 import Link from "next/link";
 import Image from 'next/image'
+import { Button } from "@/components/ui/button";
 
 export default async function Header() {
 
