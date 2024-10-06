@@ -28,8 +28,9 @@ export default function SideDrawer() {
     const [isDrawingPossible, setIsDrawingPossible] = useState(false);
     const [area, setArea] = useState<number | null>(null);
     const [subRegions, setSubRegions] = useState<google.maps.Polygon[]>([]);
-    const [selectedSubRegions, setSelectedSubRegions] = useState<Set<number>>(new Set());
-
+    const [selectedSubRegion, setSelectedSubRegion] = useState<number | null>(null);
+    const [subRegionLabels, setSubRegionLabels] = useState<google.maps.Marker[]>([]);
+    const [selectedTileCenter, setSelectedTileCenter] = useState<google.maps.LatLng | null>(null);
 
 
     const calculateArea = (path: google.maps.LatLng[]): number => {
@@ -46,12 +47,13 @@ export default function SideDrawer() {
         const latDiff = ne.lat() - sw.lat();
         const lngDiff = ne.lng() - sw.lng();
 
-        const gridSize = Math.ceil(Math.sqrt(calculateArea(mainPolygon.getPath().getArray()) / targetArea));
+        const gridSize = Math.ceil(Math.sqrt(calculateArea(mainPolygon.getPath().getArray()) / targetArea)) * 2; // Doubled for smaller tiles
 
         const latStep = latDiff / gridSize;
         const lngStep = lngDiff / gridSize;
 
         const subRegions: google.maps.Polygon[] = [];
+        const labels: google.maps.Marker[] = [];
 
         for (let i = 0; i < gridSize; i++) {
             for (let j = 0; j < gridSize; j++) {
@@ -59,21 +61,6 @@ export default function SideDrawer() {
                     new google.maps.LatLng(sw.lat() + i * latStep, sw.lng() + j * lngStep),
                     new google.maps.LatLng(sw.lat() + (i + 1) * latStep, sw.lng() + (j + 1) * lngStep)
                 );
-
-                const cellPolygon = new google.maps.Polygon({
-                    paths: [
-                        cellBounds.getNorthEast(),
-                        new google.maps.LatLng(cellBounds.getNorthEast().lat(), cellBounds.getSouthWest().lng()),
-                        cellBounds.getSouthWest(),
-                        new google.maps.LatLng(cellBounds.getSouthWest().lat(), cellBounds.getNorthEast().lng()),
-                    ],
-                    strokeColor: "#0000FF",
-                    strokeOpacity: 0.8,
-                    strokeWeight: 2,
-                    fillColor: "#0000FF",
-                    fillOpacity: 0.35,
-                });
-
 
                 if (google.maps.geometry.poly.containsLocation(cellBounds.getCenter(), mainPolygon)) {
                     const subRegion = new google.maps.Polygon({
@@ -85,45 +72,65 @@ export default function SideDrawer() {
                         ],
                         strokeColor: "#0000FF",
                         strokeOpacity: 0.8,
-                        strokeWeight: 2,
+                        strokeWeight: 1,
                         fillColor: "#0000FF",
                         fillOpacity: 0.35,
                     });
 
+                    const tileNumber = subRegions.length + 1;
+
                     // Add click listener
                     subRegion.addListener("click", () => {
-                        const index = subRegions.indexOf(subRegion);
-                        setSelectedSubRegions(prev => {
-                            const newSet = new Set(prev);
-                            if (newSet.has(index)) {
-                                newSet.delete(index);
-                                subRegion.setOptions({ fillColor: "#0000FF" });
-                            } else {
-                                newSet.add(index);
-                                subRegion.setOptions({ fillColor: "#00FF00" });
+                        const center = cellBounds.getCenter();
+                        setSelectedTileCenter(center);
+                        if (selectedSubRegion === tileNumber) {
+                            setSelectedSubRegion(null);
+                            subRegion.setOptions({ fillColor: "#0000FF", fillOpacity: 0.35 });
+                        } else {
+                            if (selectedSubRegion !== null) {
+                                const prevSubRegion = subRegions[selectedSubRegion - 1];
+                                prevSubRegion.setOptions({ fillColor: "#0000FF", fillOpacity: 0.35 });
                             }
-                            return newSet;
-                        });
+                            setSelectedSubRegion(tileNumber);
+                            subRegion.setOptions({ fillColor: "#0000FF", fillOpacity: 0.7 });
+                        }
+                        console.log(`Tile ${tileNumber} center coordinates:`, center.lat(), center.lng());
                     });
-
                     // Add hover listeners
                     subRegion.addListener("mouseover", () => {
-                        if (!selectedSubRegions.has(subRegions.length)) {
-                            subRegion.setOptions({ fillColor: "#FFFF00" });
+                        if (selectedSubRegion !== tileNumber) {
+                            subRegion.setOptions({ fillColor: "#FFFF00", fillOpacity: 0.7 });
                         }
                     });
 
                     subRegion.addListener("mouseout", () => {
-                        if (!selectedSubRegions.has(subRegions.length)) {
-                            subRegion.setOptions({ fillColor: "#0000FF" });
+                        if (selectedSubRegion !== tileNumber) {
+                            subRegion.setOptions({ fillColor: "#0000FF", fillOpacity: 0.35 });
                         }
                     });
 
                     subRegions.push(subRegion);
+
+                    // Add label
+                    const label = new google.maps.Marker({
+                        position: cellBounds.getCenter(),
+                        label: {
+                            text: tileNumber.toString(),
+                            color: "white",
+                            fontSize: "10px",
+                        },
+                        icon: {
+                            path: google.maps.SymbolPath.CIRCLE,
+                            scale: 0,
+                        },
+                    });
+
+                    labels.push(label);
                 }
             }
         }
 
+        setSubRegionLabels(labels);
         return subRegions;
     };
 
@@ -245,24 +252,6 @@ export default function SideDrawer() {
         }
     };
 
-    const resetSelection = () => {
-        if (polygon) {
-            polygon.setMap(null);
-        }
-        circles.forEach(circle => circle.setMap(null));
-        subRegions.forEach(subRegion => subRegion.setMap(null));
-        setSelectedPoints([]);
-        setCircles([]);
-        setPolygon(null);
-        setSubRegions([]);
-        setSelectedSubRegions(new Set());
-        setIsSelecting(false);
-        setShowPopup(false);
-        setIsDrawn(false);
-        setIsPolygonFinalized(false);
-        setArea(null);
-        console.log("Selection reset");
-    };
 
     const finalizePolygon = () => {
         if (polygon) {
@@ -273,10 +262,37 @@ export default function SideDrawer() {
                 const newSubRegions = divideIntoSubRegions(polygon, 1000000);
                 setSubRegions(newSubRegions);
                 newSubRegions.forEach(subRegion => subRegion.setMap(map));
+                subRegionLabels.forEach(label => label.setMap(map));
             }
+
+            const polygonBounds = new google.maps.LatLngBounds();
+            polygon.getPath().forEach((point) => polygonBounds.extend(point));
+
+
+
+            setIsPolygonFinalized(true);
+            console.log("Polygon finalized");
         }
-        setIsPolygonFinalized(true);
-        console.log("Polygon finalized");
+    };
+    const resetSelection = () => {
+        if (polygon) {
+            polygon.setMap(null);
+        }
+        circles.forEach(circle => circle.setMap(null));
+        subRegions.forEach(subRegion => subRegion.setMap(null));
+        subRegionLabels.forEach(label => label.setMap(null));
+        setSelectedPoints([]);
+        setCircles([]);
+        setPolygon(null);
+        setSubRegions([]);
+        setSubRegionLabels([]);
+        setSelectedSubRegion(null);
+        setIsSelecting(false);
+        setShowPopup(false);
+        setIsDrawn(false);
+        setIsPolygonFinalized(false);
+        setArea(null);
+        console.log("Selection reset");
     };
 
     useEffect(() => {
@@ -290,23 +306,29 @@ export default function SideDrawer() {
     }
 
     return (
-        <div className="relative h-[90vh] overflow-hidden">
-            <div className={'flex flex-row space-x-2  h-[90vh]'}>
-                <div  className="ml-4 w-1/5 rounded-3xl h-full" id={'chatbot'} >
+        <div className="md:relative md:h-[88vh] py-4 overflow-hidden ">
+            <div className={'flex md:flex-row flex-col md:space-x-4 space-y-4 h-full'}>
+                <div  className="md:ml-4 md:w-1/5 w-full rounded-3xl md:h-full h-1/5" id={'chatbot'} >
                     <ChatSection />
                 </div>
-                <div className={'relative w-3/5 h-full'}>
+                <div className={'md:relative md:w-3/5 w-full md:h-full h-3/5'}>
                     {showPopup && (
-                        <div className="absolute top-4 right-4 bg-yellow-500 text-black p-4 rounded-lg shadow-lg z-20">
+                        <div className="md:absolute top-4 right-4 bg-yellow-500 text-black p-4 rounded-lg shadow-lg z-20">
                             You are in selecting mode! Right-click to draw the region.
                         </div>
                     )}
                     {area && (
-                        <div className="absolute top-20 right-2 bg-white text-black p-4 rounded-lg shadow-lg z-20">
-                            Area: {(area / 1000000).toFixed(2)} km²
+                        <div className="md:absolute top-20 right-2 bg-white text-black p-4 rounded-lg shadow-lg z-20">
+                            <p>Area: {(area / 1000000).toFixed(2)} km²</p>
+                            <p>Selected Tile: {selectedSubRegion !== null ? selectedSubRegion : 'None'}</p>
+                            {/*{selectedTileCenter && (*/}
+                            {/*    <p>*/}
+                            {/*        Tile Center: {selectedTileCenter.lat().toFixed(6)}, {selectedTileCenter.lng().toFixed(6)}*/}
+                            {/*    </p>*/}
+                            {/*)}*/}
                         </div>
                     )}
-                    <div className="absolute top-4 left-4 rounded-xl p-4 mx-auto from-white/20 to-black shadow-lg ring-1 ring-black/5 backdrop-blur-sm bg-gradient-to-br z-10">
+                    <div className="md:absolute top-4 max-sm:h-full left-4 rounded-xl p-4 mx-auto from-white/20 to-black shadow-lg ring-1 ring-black/5 backdrop-blur-sm bg-gradient-to-br z-10">
                         <h1 className="text-lg font-semibold text-white mb-2">Map Options</h1>
                         <div className="flex flex-col space-y-2">
                             <button
@@ -384,16 +406,16 @@ export default function SideDrawer() {
                             </button>
                         </div>
                     </div>
-                    <div className="absolute inset-0 p-4 rounded-lg" id="map"></div>
+                    <div className="md:absolute max-sm:h-full inset-0 p-4 rounded-lg" id="map"></div>
                 </div>
-                <div  className="mr-4 w-1/5 rounded-3xl h-full" id={'chatbot'} >
+                <div  className="md:mr-4 md:w-1/5 w-full rounded-3xl md:h-full h-1/5" id={'chatbot'} >
                     <Report />
                 </div>
             </div>
 
             {polygon && !isPolygonFinalized && (
                 <button
-                    className="fixed bottom-4 left-1/2 transform -translate-x-1/2 bg-green-500 text-white px-12 py-12 rounded-md"
+                    className="fixed bottom-8 w-1/3 left-1/2 shadow-2xl  transform -translate-x-1/2 bg-green-500 text-white px-12 py-2 rounded-md"
                     onClick={finalizePolygon}
                 >
                     Submit
