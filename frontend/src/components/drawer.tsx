@@ -313,7 +313,7 @@ export default function SideDrawer() {
                 </div>
                 <div className={'md:relative md:w-3/5 w-full md:h-full h-3/5'}>
                     {showPopup && (
-                        <div className="md:absolute top-4 right-4 bg-yellow-500 text-black p-4 rounded-lg shadow-lg z-20">
+                        <div className="md:absolute top-12 right-2 bg-yellow-500 text-black p-4 rounded-lg shadow-lg z-20">
                             You are in selecting mode! Right-click to draw the region.
                         </div>
                     )}
@@ -403,6 +403,12 @@ export default function SideDrawer() {
                                 onClick={resetSelection}
                             >
                                 Reset Selection
+                            </button>
+                            <button
+                                className={`bg-transparent ${isSelecting || isDrawn ? "border border-2 text-red-900 border-red-900" : '' } text-white px-3 py-2 rounded-md`}
+                                onClick={resetSelection}
+                            >
+                                Reverse search
                             </button>
                         </div>
                     </div>
