@@ -26,6 +26,7 @@ export default function SideDrawer() {
     const [circles, setCircles] = useState<google.maps.Circle[]>([]);
     const [polygon, setPolygon] = useState<google.maps.Polygon | null>(null);
     const [showPopup, setShowPopup] = useState(false);
+    const [showPopup2, setShowPopup2] = useState(false);
     const [isPolygonFinalized, setIsPolygonFinalized] = useState(false);
     const [selectedStyle, setSelectedStyle] = useState<"roadmap" | "satellite" | "hybrid">("roadmap");
     const [isDrawingPossible, setIsDrawingPossible] = useState(false);
@@ -36,6 +37,10 @@ export default function SideDrawer() {
     const [selectedTileCenter, setSelectedTileCenter] = useState<google.maps.LatLng | null>(null);
     const [response, setResponse] = useState<string | null>(null);
     const [loading, setLoading] = useState(false); // Add loading state
+
+    const togglePopup = () => {
+        setShowPopup2(!showPopup2);
+    }
 
     const calculateArea = (path: google.maps.LatLng[]): number => {
         return google.maps.geometry.spherical.computeArea(path);
@@ -351,6 +356,15 @@ export default function SideDrawer() {
                             You are in selecting mode! Right-click to draw the region.
                         </div>
                     )}
+                    {showPopup2 && (
+                        <div className="fixed w-1/2 h-1/2  bg-black bg-opacity-50 flex items-center justify-center z-50">
+                            <div className=" p-4 rounded-lg shadow-lg w-full h-screen justify-center justify-items-center">
+                                <iframe className='w-full h-screen' src="http://127.0.0.1:5000"></iframe>
+                                <Button onClick={togglePopup} className="absolute top-4 right-4 text-black">Close</Button>
+                            </div>
+                        </div>
+                    )}
+
                     {area && (
                         <div className="md:absolute top-20 right-2 bg-white text-black p-4 rounded-lg shadow-lg z-20">
                             <p>Area: {(area / 1000000).toFixed(2)} km²</p>
@@ -452,7 +466,7 @@ export default function SideDrawer() {
                     <Card className="w-full h-full mx-auto from-white/20  shadow-lg ring-1 ring-black/5 backdrop-blur-sm bg-gradient-to-br">
                         <CardHeader className={'flex flex-col space-y-6 h-1/6'}>
                             <CardTitle>Report📃</CardTitle>
-                            <Button className="" onClick={() => {} }>
+                            <Button className="" onClick={togglePopup}>
                                 Pesticides Analysis 🌱
                             </Button>
                         </CardHeader>

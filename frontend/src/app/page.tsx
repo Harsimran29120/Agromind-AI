@@ -18,15 +18,15 @@ export default function Home() {
       >
         
     <h1 className="animate-fade-in -translate-y-4 text-balance bg-gradient-to-br from-black from-30% to-black/10 bg-clip-text py-6 text-5xl font-medium leading-none tracking-tighter text-transparent [--animation-delay:200ms] sm:text-6xl md:text-7xl lg:text-8xl dark:from-white dark:to-white/40">
-            Farmers AI is the new
+            AgroMind AI is the new
             <br className="hidden md:block" />
             {' '}
             way to monitor your crops
          </h1>
          <p className="animate-fade-in mb-12 -translate-y-4 text-balance text-lg tracking-tight text-gray-400 [--animation-delay:400ms] md:text-xl">
-         bla bla bla bl bla bla bla bl bla bla bla bl bla bla bla bl            <br className="hidden md:block" />
+         SMART ,RELIABLE AND SCALABLE            <br className="hidden md:block" />
             {' '}
-            bla bla bla bla
+            Real time interactive map for agriculture monitoring and risk prediction based on AI and satellite data
          </p>
          <Button className="animate-fade-in -translate-y-4 gap-1 rounded-lg text-white ease-in-out [--animation-delay:600ms] dark:text-black">
             <span>Get Started for free </span>
@@ -50,7 +50,7 @@ export default function Home() {
               />
 
               <img
-                 src="https://www.opendatasoft.com/wp-content/uploads/2023/03/Blog-thumbnail-1.png"
+                 src="./img.png"
                  alt="Hero Image"
                  className="relative hidden size-full rounded-[inherit] border object-contain dark:block"
               />
@@ -72,60 +72,42 @@ export default function Home() {
                   TRUSTED BY TEAMS FROM AROUND THE WORLD
                </h2>
                <div className="mt-6">
-                  <ul className="flex flex-wrap items-center justify-center gap-x-10 gap-y-6 md:gap-x-16 [&_path]:fill-white">
+                  <ul className="flex flex-row items-center justify-center gap-x-10 gap-y-6 md:gap-x-16 [&_path]:fill-white">
                      <li>
-                        <Image
-                           alt="Google"
-                           src="https://cdn.nyxbui.design/companies/Google.svg"
-                           className="h-8 w-28 px-2 dark:brightness-0 dark:invert"
+                        <img
+                           alt="Polito"
+                           src="./img_2.png"
+                           className="h-8 w-auto h-auto px-2 ring-transparent bg-transparent"
                            width={28}
                            height={8}
                         />
                      </li>
                      <li>
-                        <Image
-                           alt="Microsoft"
-                           src="https://cdn.nyxbui.design/companies/Microsoft.svg"
-                           className="h-8 w-28 px-2 dark:brightness-0 dark:invert"
+                        <img
+                           alt="essa"
+                           src="./img_6.png"
+                           className="h-8 w-auto h-auto bg-transparent px-2 ring-transparent"
                            width={28}
                            height={8}
                         />
                      </li>
                      <li>
-                        <Image
+                        <img
                            alt="GitHub"
-                           src="https://cdn.nyxbui.design/companies/GitHub.svg"
-                           className="h-8 w-28 px-2 dark:brightness-0 dark:invert"
+                           src="./img_4.png"
+                           className="h-8 w-auto h-auto"
                            width={28}
                            height={8}
                         />
                      </li>
 
-                     <li>
-                        <Image
-                           alt="Uber"
-                           src="https://cdn.nyxbui.design/companies/Uber.svg"
-                           className="h-8 w-28 px-2 dark:brightness-0 dark:invert"
-                           width={28}
-                           height={8}
-                        />
-                     </li>
-                     <li>
-                        <Image
-                           alt="Notion"
-                           src="https://cdn.nyxbui.design/companies/Notion.svg"
-                           className="h-8 w-28 px-2 dark:brightness-0 dark:invert"
-                           width={28}
-                           height={8}
-                        />
-                     </li>
                   </ul>
                </div>
             </div>
          </div>
       </section>
-      <SphereMask />
-      <PricingSection />
+      {/*<SphereMask />*/}
+      {/*<PricingSection />*/}
       
          </section>
          <CallToActionSection />
