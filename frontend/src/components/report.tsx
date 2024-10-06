@@ -71,11 +71,14 @@ export default function Report() {
 
     return (
         <Card className="w-full h-full mx-auto from-white/20  shadow-lg ring-1 ring-black/5 backdrop-blur-sm bg-gradient-to-br">
-            <CardHeader className={'h-1/5'}>
-                <CardTitle>Report 📃</CardTitle>
+            <CardHeader className={'flex flex-col space-y-6 h-1/5'}>
+                <CardTitle>Report📃</CardTitle>
+                <Button className="y-4" onClick={() => {} }>
+Recent reports
+</Button>
             </CardHeader>
             <CardContent className={'h-3/5'}>
-                <ScrollArea className="h-full pr-4 mb-4">
+                <ScrollArea className="h-full pr-4 mb-4 hidden">
                     {messages.map((message) => (
                         <div
                             key={message.id}
@@ -108,35 +111,16 @@ export default function Report() {
                         </div>
                     ))}
                 </ScrollArea>
-            </CardContent>
-            <CardFooter className={'flex flex-col h-1/5'}>
-                <div className="grid grid-cols-2 gap-2 mb-4">
-                    {predefinedQuestions.map((question, index) => (
-                        <Button
-                            key={index}
-                            variant="outline"
-                            className="h-auto py-2 px-4 text-sm text-left whitespace-normal"
-                            onClick={() => handleSend(question)}
-                        >
-                            {question}
-                        </Button>
-                    ))}
+                <div className={'justify-items-center justify-center border rounded-xl p-2 border-white'}>
+                    <p className={'text-sm  text-center  '}>
+                       After selecting the map and analysis the report will be shown here, <br/> then you can use the chatbot to ask questions
+                    </p>
                 </div>
-
-                <form
-                    onSubmit={(e) => {
-                        e.preventDefault()
-                        handleSend(input)
-                    }}
-                    className="flex w-full items-center space-x-2"
-                >
-                    <Input
-                        value={input}
-                        onChange={(e) => setInput(e.target.value)}
-                        placeholder="Type your message..."
-                    />
-                    <Button type="submit">Send</Button>
-                </form>
+            </CardContent>
+            <CardFooter className={'flex flex-col h-1/5 justify-end'}>
+                <p className={'text-sm'}>
+                    Made by AgroMind AI
+                </p>
             </CardFooter>
         </Card>
     )

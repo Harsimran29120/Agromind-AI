@@ -1,5 +1,4 @@
-"use client";
-
+"use client"
 import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import {
@@ -18,12 +17,72 @@ export default function SideDrawer() {
     const [style, setStyle] = useState<"roadmap" | "satellite" | "hybrid">("roadmap");
     const [terrain, setTerrain] = useState(false);
     const [isSelecting, setIsSelecting] = useState(false);
+    const [isDrawn, setIsDrawn] = useState(false);
     const isSelectingRef = useRef(isSelecting);
     const [selectedPoints, setSelectedPoints] = useState<google.maps.LatLng[]>([]);
     const [circles, setCircles] = useState<google.maps.Circle[]>([]);
     const [polygon, setPolygon] = useState<google.maps.Polygon | null>(null);
     const [showPopup, setShowPopup] = useState(false);
     const [isPolygonFinalized, setIsPolygonFinalized] = useState(false);
+    const [selectedStyle, setSelectedStyle] = useState<"roadmap" | "satellite" | "hybrid">("roadmap");
+    const [isDrawingPossible, setIsDrawingPossible] = useState(false);
+    const [area, setArea] = useState<number | null>(null);
+    const [subRegions, setSubRegions] = useState<google.maps.Polygon[]>([]);
+    const [selectedSubRegions, setSelectedSubRegions] = useState<Set<number>>(new Set());
+
+
+
+    const calculateArea = (path: google.maps.LatLng[]): number => {
+        return google.maps.geometry.spherical.computeArea(path);
+    };
+
+    const divideIntoSubRegions = (mainPolygon: google.maps.Polygon, targetArea: number) => {
+        const bounds = new google.maps.LatLngBounds();
+        mainPolygon.getPath().forEach((point) => bounds.extend(point));
+
+        const ne = bounds.getNorthEast();
+        const sw = bounds.getSouthWest();
+
+        const latDiff = ne.lat() - sw.lat();
+        const lngDiff = ne.lng() - sw.lng();
+
+        const gridSize = Math.ceil(Math.sqrt(calculateArea(mainPolygon.getPath().getArray()) / targetArea));
+
+        const latStep = latDiff / gridSize;
+        const lngStep = lngDiff / gridSize;
+
+        const subRegions: google.maps.Polygon[] = [];
+
+        for (let i = 0; i < gridSize; i++) {
+            for (let j = 0; j < gridSize; j++) {
+                const cellBounds = new google.maps.LatLngBounds(
+                    new google.maps.LatLng(sw.lat() + i * latStep, sw.lng() + j * lngStep),
+                    new google.maps.LatLng(sw.lat() + (i + 1) * latStep, sw.lng() + (j + 1) * lngStep)
+                );
+
+                const cellPolygon = new google.maps.Polygon({
+                    paths: [
+                        cellBounds.getNorthEast(),
+                        new google.maps.LatLng(cellBounds.getNorthEast().lat(), cellBounds.getSouthWest().lng()),
+                        cellBounds.getSouthWest(),
+                        new google.maps.LatLng(cellBounds.getSouthWest().lat(), cellBounds.getNorthEast().lng()),
+                    ],
+                    strokeColor: "#0000FF",
+                    strokeOpacity: 0.8,
+                    strokeWeight: 2,
+                    fillColor: "#0000FF",
+                    fillOpacity: 0.35,
+                });
+
+                if (google.maps.geometry.poly.containsLocation(cellBounds.getCenter(), mainPolygon)) {
+                    subRegions.push(cellPolygon);
+                }
+            }
+        }
+
+        return subRegions;
+    };
+
 
     useEffect(() => {
         isSelectingRef.current = isSelecting;
@@ -115,6 +174,10 @@ export default function SideDrawer() {
         }
     }, [terrain, style, map, isPolygonFinalized]);
 
+    useEffect(() => {
+        setIsDrawingPossible(selectedPoints.length >= 3);
+    }, [selectedPoints]);
+
     const drawPolygon = () => {
         console.log("Drawing polygon with points: ", selectedPoints);
         if (map && selectedPoints.length > 2) {
@@ -132,6 +195,7 @@ export default function SideDrawer() {
             newPolygon.setMap(map);
             setPolygon(newPolygon);
             setIsSelecting(false);
+            setIsDrawn(true);
             setShowPopup(false);
             console.log("Polygon drawn with points: ", selectedPoints);
         }
@@ -139,6 +203,7 @@ export default function SideDrawer() {
 
     const resetSelection = () => {
         if (polygon) {
+
             polygon.setMap(null);
         }
         circles.forEach(circle => circle.setMap(null));
@@ -147,14 +212,27 @@ export default function SideDrawer() {
         setPolygon(null);
         setIsSelecting(false);
         setShowPopup(false);
+        setIsDrawn(false);
         setIsPolygonFinalized(false);
+        google.maps.Polygon.prototype.setMap = function (map: google.maps.Map | null) {};
         console.log("Selection reset");
     };
 
     const finalizePolygon = () => {
+        if (polygon) {
+            const polygonArea = calculateArea(polygon.getPath().getArray());
+            setArea(polygonArea);
+
+            if (polygonArea > 1000000) { // 1000 km² in m²
+                const newSubRegions = divideIntoSubRegions(polygon, 1000000);
+                setSubRegions(newSubRegions);
+                newSubRegions.forEach(subRegion => subRegion.setMap(map));
+            }
+        }
         setIsPolygonFinalized(true);
         console.log("Polygon finalized");
     };
+
 
     useEffect(() => {
         if (isSelecting) {
@@ -168,108 +246,105 @@ export default function SideDrawer() {
 
     return (
         <div className="relative h-[90vh] overflow-hidden">
-            {/*<button*/}
-            {/*    className="fixed left-0 top-1/2 -translate-y-1/2 bg-primary text-primary-foreground px-2 py-4 rounded-r-md transform -translate-x-1 hover:translate-x-0 transition-transform duration-200 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-opacity-50 z-50"*/}
-            {/*    onClick={() => setIsOpen(true)}*/}
-            {/*>*/}
-            {/*    <span className="text-sm font-bold vertical-text">Open Chat</span>*/}
-            {/*</button>*/}
-
-<div className={'flex flex-row space-x-2  h-[90vh]'}>
-    <div  className="ml-4 w-1/5 rounded-3xl h-full" id={'chatbot'} >
-        <ChatSection />
-    </div>
-<div className={'relative w-3/5 h-full'}>
-    <div className="absolute top-4 left-4    rounded-xl p-4 mx-auto from-white/20 to-black  shadow-lg ring-1 ring-black/5 backdrop-blur-sm bg-gradient-to-br  z-10">
-        <h1 className="text-lg font-semibold text-white mb-2">Map Options</h1>
-        <div className="flex flex-col space-y-2">
-            <button
-                className="bg-blue-500 text-white px-3 py-2 rounded-md"
-                onClick={() => {
-                    if (map) setStyle("roadmap");
-                }}
-                disabled={isPolygonFinalized}
-            >
-                Roadmap
-            </button>
-            <button
-                className="bg-blue-500 text-white px-3 py-2 rounded-md"
-                onClick={() => {
-                    if (map) setStyle("satellite");
-                }}
-                disabled={isPolygonFinalized}
-            >
-                Satellite
-            </button>
-            <button
-                className="bg-blue-500 text-white px-3 py-2 rounded-md"
-                onClick={() => {
-                    if (map) setStyle("hybrid");
-                }}
-                disabled={isPolygonFinalized}
-            >
-                Hybrid
-            </button>
-            <button
-                className="bg-blue-500 text-white px-3 py-2 rounded-md"
-                onClick={() => {
-                    if (map) setTerrain(!terrain);
-                }}
-                disabled={isPolygonFinalized}
-            >
-                {terrain ? "Disable Terrain" : "Enable Terrain"}
-            </button>
-
-            <button
-                className="bg-green-500 text-white px-3 py-2 rounded-md"
-                onClick={() => {
-                    if (map) {
-                        setIsSelecting(true);
-                        console.log("Selecting mode enabled");
-                    }
-                }}
-                disabled={isPolygonFinalized}
-            >
-                Select a Region
-            </button>
-
-            <button
-                className="bg-yellow-500 text-white px-3 py-2 rounded-md"
-                onClick={drawPolygon}
-                disabled={selectedPoints.length < 3 || isPolygonFinalized}
-            >
-                Draw Region
-            </button>
-
-            <button
-                className="bg-red-500 text-white px-3 py-2 rounded-md"
-                onClick={resetSelection}
-            >
-                Reset Selection
-            </button>
-        </div>
-    </div>
-    <div className="  absolute inset-0 p-4 rounded-lg" id="map"></div>
-</div>
-    <div  className="mr-4 w-1/5 rounded-3xl h-full" id={'chatbot'} >
-        <Report />
-    </div>
-
-
-</div>
-
-            <Sheet open={isOpen} onOpenChange={setIsOpen}>
-                <SheetContent side="left" className="w-[70%] sm:w-[70%]">
-                    <div className="w-[100%] mt-10">
-                    </div>
-                </SheetContent>
-            </Sheet>
-
-            {showPopup && (
-                <div className="absolute top-4 right-4 bg-yellow-500 text-black p-4 rounded-lg shadow-lg z-20">
-                    You are in selecting mode! Right-click or double-tap to add points.
+            <div className={'flex flex-row space-x-2  h-[90vh]'}>
+                <div  className="ml-4 w-1/5 rounded-3xl h-full" id={'chatbot'} >
+                    <ChatSection />
                 </div>
-            )}
+                <div className={'relative w-3/5 h-full'}>
+                    {showPopup && (
+                        <div className="absolute top-4 right-4 bg-yellow-500 text-black p-4 rounded-lg shadow-lg z-20">
+                            You are in selecting mode! Right-click to draw the region.
+                        </div>
+                    )}
+                    {area && (
+                        <div className="absolute top-20 right-2 bg-white text-black p-4 rounded-lg shadow-lg z-20">
+                            Area: {(area / 1000000).toFixed(2)} km²
+                        </div>
+                    )}
+                    <div className="absolute top-4 left-4 rounded-xl p-4 mx-auto from-white/20 to-black shadow-lg ring-1 ring-black/5 backdrop-blur-sm bg-gradient-to-br z-10">
+                        <h1 className="text-lg font-semibold text-white mb-2">Map Options</h1>
+                        <div className="flex flex-col space-y-2">
+                            <button
+                                className={`bg-transparent ${selectedStyle === 'roadmap' ? 'text-black' : 'text-white' } px-3 py-2 rounded-md ${selectedStyle === "roadmap" ? "bg-white" : ""}`}
+                                onClick={() => {
+                                    if (map) {
+                                        setStyle("roadmap");
+                                        setSelectedStyle("roadmap");
+                                    }
+                                }}
+                                disabled={isPolygonFinalized}
+                            >
+                                Roadmap
+                            </button>
+                            <button
+                                className={`bg-transparent ${selectedStyle === 'satellite' ? 'text-black' : 'text-white' } px-3 py-2 rounded-md ${selectedStyle === "satellite" ? "bg-white" : ""}`}
+                                onClick={() => {
+                                    if (map) {
+                                        setStyle("satellite");
+                                        setSelectedStyle("satellite");
+                                    }
+                                }}
+                                disabled={isPolygonFinalized}
+                            >
+                                Satellite
+                            </button>
+                            <button
+                                className={`bg-transparent ${selectedStyle === 'hybrid' ? 'text-black' : 'text-white' } px-3 py-2 rounded-md ${selectedStyle === "hybrid" ? "bg-white" : ""}`}
+                                onClick={() => {
+                                    if (map) {
+                                        setStyle("hybrid");
+                                        setSelectedStyle("hybrid");
+                                    }
+                                }}
+                                disabled={isPolygonFinalized}
+                            >
+                                Hybrid
+                            </button>
+                            <button
+                                className="bg-transparent text-white px-3 py-2 rounded-md"
+                                onClick={() => {
+                                    if (map) setTerrain(!terrain);
+                                }}
+                                disabled={isPolygonFinalized}
+                            >
+                                {terrain ? "Disable Terrain" : "Enable Terrain"}
+                            </button>
+
+                            <button
+                                className={`bg-transparent text-white px-3 py-2 rounded-md ${isSelecting ? "bg-yellow-500" : ""}`}
+                                onClick={() => {
+                                    if (map) {
+                                        setIsSelecting(true);
+                                        console.log("Selecting mode enabled");
+                                    }
+                                }}
+                                disabled={isPolygonFinalized}
+                            >
+                                Select a Region
+                            </button>
+
+                            <button
+                                className={`bg-transparent ${isDrawingPossible && !isPolygonFinalized && !isDrawn ? "border border-white" : ''} text-white px-3 py-2 rounded-md ${isDrawingPossible ? "bg-green-500" : ""}`}
+                                onClick={drawPolygon}
+                                disabled={!isDrawingPossible || isPolygonFinalized}
+                            >
+                                Draw Region
+                            </button>
+
+                            <button
+                                className={`bg-transparent ${isSelecting || isDrawn ? "border border-2 text-red-900 border-red-900" : '' } text-white px-3 py-2 rounded-md`}
+                                onClick={resetSelection}
+                            >
+                                Reset Selection
+                            </button>
+                        </div>
+                    </div>
+                    <div className="absolute inset-0 p-4 rounded-lg" id="map"></div>
+                </div>
+                <div  className="mr-4 w-1/5 rounded-3xl h-full" id={'chatbot'} >
+                    <Report />
+                </div>
+            </div>
 
             {polygon && !isPolygonFinalized && (
                 <button
@@ -279,6 +354,8 @@ export default function SideDrawer() {
                     Submit
                 </button>
             )}
+
+
 
             <style jsx global>{`
               .vertical-text {

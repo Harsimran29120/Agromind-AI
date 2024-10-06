@@ -70,8 +70,7 @@ export default function ChatSection() {
   }
 
   return (
-    <Card className="w-full h-full mx-auto from-white/20  shadow-lg ring-1 ring-black/5 backdrop-blur-sm bg-gradient-to-br">
-      <CardHeader className={'h-1/5'}>
+      <Card className="w-full h-full mx-auto from-white/20 shadow-lg ring-1 ring-black/5 backdrop-blur-sm bg-gradient-to-br transition-transform duration-500 transform origin-center">      <CardHeader className={'h-1/5'}>
         <CardTitle>Chatbot</CardTitle>
       </CardHeader>
       <CardContent className={'h-3/5'}>
